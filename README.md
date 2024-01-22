@@ -1,5 +1,6 @@
 # simMACT
 Une bibliothèque logicielle de calcul des couples d'actionnement articulaires humains maximaux pour l'aide à la conception de poste de travail ergonomiques.
+
 *A software library to compute human joint actuation torques for ergonomics purpose (english version below).*
 
 `simMACT` (simulation of Maximal ACtuation Torques) est un projet de bibliothèque logicielle issue des travaux de recherche menés par l'INRS et Inria-AUCTUS. Ces travaux concernent l'estimation des performances physiques humaines pour la conception d'équipements de travail. L'objectif de `simMACT` est d'améliorer les fonctionnalités de simulation des efforts articulaires d'un logiciel de mannequin numérique (Digital Human Model, DHM) en y associant, comme une boite noire, un modèle biomécanique avancé.
