@@ -1,3 +1,5 @@
 # ignore OpenSim log files
 *.log
 
+# ignore Python stuff
+*.pyc
