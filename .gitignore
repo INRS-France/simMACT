@@ -1,0 +1,3 @@
+# ignore OpenSim log files
+*.log
+
