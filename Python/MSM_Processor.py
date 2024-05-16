@@ -820,8 +820,8 @@ def main():
 
     # initialize
     # ------------
-#    myPrc = MSM_Processor(MOBL_MDL_IGN_FILE, True)
-    myPrc = MSM_Processor(withVisu=True)
+    myPrc = MSM_Processor(join(DEF_MDL_DIR, OSIM_MDL_FILE),
+                          withVisu=True)
 
     # set the model to a test configuration
     # ---------------------------------------
@@ -830,25 +830,13 @@ def main():
     myPrc.setModelConfiguration(v_q, v_qdot)
     myPrc.show()
 
-    # get gravity effects
-    # geff = myPrc.getGravityForcesOnBody(DEF_BODY)
-    # print(geff)
-
-
 
     # Plot Muscle characteristics (force/length, force-velocity)
     # for one muscle and one joint
     # --------------------------------------------------------
     mName = "BICshort"
     cName = "r_elbow_flex"          # Arm26
-#    cName = "elbow_flexion"         # MOBL
-    # mName = myPrc.chooseItemInModel("Choose muscle to study:",
-    #                                 myPrc.getMuscleNameList)
-    # cName = myPrc.chooseItemInModel(
-    #     "Choose associated coordinate:", myPrc.getCoordinateNameList)
     myPrc.plotMuscleCharacteristics(mName, cName)
-    # plt.savefig(join(DEF_PLOT_DIR,
-    #                  "%s-%s-%s.png" % (myPrc.model.getName(), mName, cName)))
     plt.show()
     lgg.info("Test finished...")
 

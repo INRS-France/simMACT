@@ -3,3 +3,6 @@
 
 # ignore Python stuff
 *.pyc
+
+# ignore OpenSim geometry files
+Models/MOBL/4.1/Geometry/*

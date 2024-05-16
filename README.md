@@ -1,7 +1,6 @@
 # simMACT
 
-## Version française
-(english version below).
+## Presentation (english version below)
 
 *Une bibliothèque logicielle de calcul des couples d'actionnement articulaires humains maximaux pour l'aide à la conception de poste de travail ergonomiques.*
 
@@ -38,6 +37,10 @@ Figure 4: ![Figure4](Resources/3D_Zonotope.png "Figure 4")
 
 D'autres scripts sont inclus dans ce repository: ils ont servi à des travaux de recherche en vue de la qualification de la fiabilité de `simMACT` (par exemple , https://esbiomech.org/conference/archive/2023maastricht/195.pdf, https://inria.hal.science/hal-04140099/document). Ces scripts sont pour l'instant à l'état de "documents de travail".
 
+Les figures 5 et 6 obtenues à l'aide du script `ACT_Analyzer.py` présentent un exemple de code pour le calcul de la caractéristique *Torque-Angle-Velocity* de flexion-extension du coude à l'aide du modèle `MoBL`.
+
+Figure 5: ![Figure5](Resources/MOBL_elbowFlexionExtensionTVA.png "Figure 5")
+Figure 6: ![Figure6](Resources/MOBLmodel_elbowFlexionExtensionModel.png "Figure 6")
 
 #### Documentation
 Le code est largement expliqué à l'aide de `docstrings` réparties dans les sources. Ces `docstrings` peuvent être exploitées par l'outil `Sphinx`, mais la génération automatique de cette documentation n'est pas encore implémentée.
@@ -86,6 +89,11 @@ Figure 3: ![Figure3](Resources/2D_Zonotope.png "Figure 3")
 Figure 4: ![Figure4](Resources/3D_Zonotope.png "Figure 4")
 
 Other scripts are included in this repository: they have been used for research into the reliability of `simMACT` (for instance, https://esbiomech.org/conference/archive/2023maastricht/195.pdf, https://inria.hal.science/hal-04140099/document). These scripts are currently only at the "work in progress" stage.
+
+Figures 5 and 6, obtained using the `ACT_Analyzer.py` script, show sample code for calculating the *Torque-Angle-Velocity* bending-extension characteristic of the elbow using the `MoBL` model.
+
+Figure 5: ![Figure5](Resources/MOBL_elbowFlexionExtensionTVA.png "Figure 5")
+Figure 6: ![Figure6](Resources/MOBLmodel_elbowFlexionExtensionModel.png "Figure 6")
 
 #### Documentation
 The code is largely explained using `docstrings` distributed throughout the source code. These `docstrings` can be processed by the `Sphinx` tool, but automatic generation of this documentation has not yet been implemented.

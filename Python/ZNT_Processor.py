@@ -113,22 +113,26 @@ def orderPointsInPlane(pts, n):
     u = rays[0,:]
  
     # compute angle between rays[1:] and ray[0]
-    for k in range(nbP-1):
-        v = rays[k+1,:]
-        dt = np.dot(u,v)
-        cp = np.cross(u,v)
-        at = get_angle(u,v)
+    if nbP > 3:
+        for k in range(nbP-1):
+            v = rays[k+1,:]
+            dt = np.dot(u,v)
+            cp = np.cross(u,v)
+            at = get_angle(u,v)
 
-        if np.signbit(np.dot(cp, n)):
-            # the rotation angle is backward
-            ang = np.degrees(2*np.pi - at)
-        else:
-            ang = np.degrees(at)
-        angles[k+1] = ang
+            if np.signbit(np.dot(cp, n)):
+                # the rotation angle is backward
+                ang = np.degrees(2*np.pi - at)
+            else:
+                ang = np.degrees(at)
+            angles[k+1] = ang
 
-    # order vertices indices according to angles
-    ordered = np.argsort(angles).tolist()
-        # the sequence of position in 'angles' that sorts it in increasing angle order
+        # order vertices indices according to angles
+        ordered = np.argsort(angles).tolist()
+            # the sequence of position in 'angles' that sorts it in increasing angle order
+    else:
+        ordered = range(nbP)
+            # no need to order, keep the initial order
     return ordered
 
 # ==============================================================================
@@ -745,9 +749,10 @@ class Zonotope():
                 p_ = p.round(3).tolist()
                 if not inter.count(p_):
                     inter.append(p_)
-        logger.debug("Found %d intersection point(s)!", len(inter))
 
-        # Reorder by adjacencies for plotting
+        nbPts = len(inter)
+        logger.debug("Found %d intersection point(s)", nbPts)
+
         orderedInt = orderPointsInPlane(np.array(inter), nf[:-1])
 
         # Plots
