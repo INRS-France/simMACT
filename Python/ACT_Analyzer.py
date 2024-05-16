@@ -531,68 +531,74 @@ class JointTVA(AbstractAnalysis):
         # ==============================
         # Plot
         # ==============================
-        fig = plt.figure()
-        fig.suptitle("TVA surface for DoF: '%s'" % self.cname)
-        X, Y = np.meshgrid(DEF_Q_RANGE, DEF_V_RANGE, indexing='ij')
+        # fig = plt.figure()
+        # fig.suptitle("TVA surface for DoF: '%s'" % self.cname)
+        # X, Y = np.meshgrid(DEF_Q_RANGE, DEF_V_RANGE, indexing='ij')
 
-        # Flexion
-        ax3d = fig.add_subplot(121, projection="3d")
-        ax3d.set_xlabel('Joint angle (deg)')
-        ax3d.set_ylabel('Joint velocity (deg/s)')
-        ax3d.set_zlabel('Flexion max torque (N.m)')
-        ax3d.plot_surface(X, Y, mact[:, :, 1],
-                          cmap=cm.coolwarm,
-                          linewidth=0.1, antialiased=False, alpha=0.75)
-        xmin = np.min(ax3d.axes.get_xlim3d())
-        ymax = np.max(ax3d.axes.get_ylim3d())
-        ax3d.contour(X, Y, mact[:, :, 1],
-                     zdir='x', offset=xmin, cmap='copper')
-        ax3d.contour(X, Y, mact[:, :, 1],
-                     zdir='y', offset=ymax, cmap='copper')
+        # # Flexion
+        # ax3d = fig.add_subplot(121, projection="3d")
+        # ax3d.set_xlabel('Joint angle (deg)')
+        # ax3d.set_ylabel('Joint velocity (deg/s)')
+        # ax3d.set_zlabel('Flexion max torque (N.m)')
+        # ax3d.plot_surface(X, Y, mact[:, :, 1],
+                          # cmap=cm.coolwarm,
+                          # linewidth=0.1, antialiased=False, alpha=0.75)
+        # xmin = np.min(ax3d.axes.get_xlim3d())
+        # ymax = np.max(ax3d.axes.get_ylim3d())
+        # ax3d.contour(X, Y, mact[:, :, 1],
+                     # zdir='x', offset=xmin, cmap='copper')
+        # ax3d.contour(X, Y, mact[:, :, 1],
+                     # zdir='y', offset=ymax, cmap='copper')
 
-        # Extension
-        ax3d = fig.add_subplot(122, projection="3d")
-        ax3d.set_xlabel('Joint angle (deg)')
-        ax3d.set_ylabel('Joint velocity (deg/s)')
-        ax3d.set_zlabel('Extension max torque (N.m)')
-        ax3d.plot_surface(X, Y, -mact[:, :, 0],
-                          cmap=cm.coolwarm,
-                          linewidth=0.1, antialiased=False, alpha=0.75)
-        xmin = np.min(ax3d.axes.get_xlim3d())
-        ymax = np.max(ax3d.axes.get_ylim3d())
-        ax3d.contour(X, Y, -mact[:, :, 0],
-                     zdir='x', offset=xmin, cmap='copper')
-        ax3d.contour(X, Y, -mact[:, :, 0],
-                     zdir='y', offset=ymax, cmap='copper')
+        # # Extension
+        # ax3d = fig.add_subplot(122, projection="3d")
+        # ax3d.set_xlabel('Joint angle (deg)')
+        # ax3d.set_ylabel('Joint velocity (deg/s)')
+        # ax3d.set_zlabel('Extension max torque (N.m)')
+        # ax3d.plot_surface(X, Y, -mact[:, :, 0],
+                          # cmap=cm.coolwarm,
+                          # linewidth=0.1, antialiased=False, alpha=0.75)
+        # xmin = np.min(ax3d.axes.get_xlim3d())
+        # ymax = np.max(ax3d.axes.get_ylim3d())
+        # ax3d.contour(X, Y, -mact[:, :, 0],
+                     # zdir='x', offset=xmin, cmap='copper')
+        # ax3d.contour(X, Y, -mact[:, :, 0],
+                     # zdir='y', offset=ymax, cmap='copper')
 
         #=== In one subplot ===
         fig = plt.figure()
         fig.suptitle("TVA surface for DoF: '%s'" % self.cname)
         X, Y = np.meshgrid(DEF_Q_RANGE, DEF_V_RANGE, indexing='ij')
 
+        min_, max_ = mact.min(), mact.max()
+
         ax3d = fig.add_subplot(111, projection="3d")
         ax3d.set_xlabel('Joint angle (deg)')
         ax3d.set_ylabel('Joint velocity (deg/s)')
-        ax3d.set_zlabel('Flexion(+) / Extension(-) max torque (N.m)')
-        ax3d.plot_surface(X, Y, mact[:, :, 1],
-                          cmap=cm.coolwarm,
-                          linewidth=0.1, antialiased=False, alpha=0.75)
+        ax3d.set_zlabel('max torque (N.m)')
+
+        flx = ax3d.plot_surface(X, Y, mact[:, :, 1],
+                                cmap=cm.coolwarm,
+                                vmin=min_, vmax=max_,
+                                linewidth=0.1, antialiased=False, alpha=0.75)
+        ext = ax3d.plot_surface(X, Y, mact[:, :, 0],
+                                cmap=cm.coolwarm,
+                                vmin=min_, vmax=max_,
+                                linewidth=0.1, antialiased=False, alpha=0.75)
+        fig.colorbar(flx, location='left').set_label('Flexion(+) and Extension (-)',
+                                                     rotation=90)
+
         xmin = np.min(ax3d.axes.get_xlim3d())
         ymax = np.max(ax3d.axes.get_ylim3d())
+
         ax3d.contour(X, Y, mact[:, :, 1],
                      zdir='x', offset=xmin, cmap='copper')
         ax3d.contour(X, Y, mact[:, :, 1],
                      zdir='y', offset=ymax, cmap='copper')
-
-
-        ax3d.plot_surface(X, Y, mact[:, :, 0],
-                          cmap=cm.coolwarm,
-                          linewidth=0.1, antialiased=False, alpha=0.75)
         ax3d.contour(X, Y, mact[:, :, 0],
                      zdir='x', offset=xmin, cmap='copper')
         ax3d.contour(X, Y, mact[:, :, 0],
                      zdir='y', offset=ymax, cmap='copper')
-
 
         plt.show()
 
