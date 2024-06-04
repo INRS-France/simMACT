@@ -101,8 +101,8 @@ def orderPointsInPlane(pts, n):
         n (np.array(N)): the N-D vector normal to the plane
 
     Returns:
-        (list): the ordered list, made of the sorted nbP indices of lines
-                of the 'pts' array. 
+        (list): the ordered list, made of the sorted nbP indices of raws
+                of the array 'pts'. 
     """
     ordered = []
     nbP = pts.shape[0]
@@ -129,10 +129,12 @@ def orderPointsInPlane(pts, n):
 
         # order vertices indices according to angles
         ordered = np.argsort(angles).tolist()
-            # the sequence of position in 'angles' that sorts it in increasing angle order
+            # the sequence of indices in the array 'angles' that
+            # sorts its values in increasing angle order
     else:
         ordered = range(nbP)
             # no need to order, keep the initial order
+
     return ordered
 
 # ==============================================================================
@@ -588,7 +590,7 @@ class Zonotope():
             ax.set_ylabel("Torque on '%s' (N.m)" % self.cNames[1])
 
         # origin
-        ax.plot(0, 0, 'ro')
+        ax.plot(0, 0, 'bo')
 
         # vertices
         verts = self.verts
@@ -634,7 +636,7 @@ class Zonotope():
             ax = f.add_subplot(111, projection="3d")
 
             # initialisation of the plot
-            ax.plot(0, 0, 0, 'ro')     # origin
+            ax.plot(0, 0, 0, 'bo')     # origin
             ax.set_xlabel("Torque on '%s' (N.m)" % self.cNames[0])
             ax.set_ylabel("Torque on '%s' (N.m)" % self.cNames[1])
             ax.set_zlabel("Torque on '%s' (N.m)" % self.cNames[2])
@@ -647,8 +649,8 @@ class Zonotope():
 
         # plot vertices
         for k,p in enumerate(pts):
-            ax.text(*p, str(k))
-            ax.plot(*p, 'ko')
+#            ax.text(*p, str(k))
+            ax.plot(*p, 'k.')
 
         # plot faces
         faces = self.faces
@@ -657,7 +659,7 @@ class Zonotope():
             f.append(f[0])  # close the polygon by adding the starting point
             v = [pts[idx,:].tolist() for idx in f]
             polys.append(v)
-        ax.add_collection3d(Poly3DCollection(polys, facecolor='0.8', edgecolor = 'k', alpha=0.65))
+        ax.add_collection3d(Poly3DCollection(polys, facecolor='0.8', edgecolor = 'k', alpha=0.25))
 
         return ax
 
@@ -710,11 +712,15 @@ class Zonotope():
             if self.nc == 2:
                 ax = self.plot2D()[0]
                 if pt is not None:
-                    ax.plot([0., pt[0]], [0., pt[1]], 'ro:')
+                    ax.plot([0., pt[0]], [0., pt[1]], 'r:')
+                    ax.plot(pt[0], pt[1], 'ro')
+                    ax.plot(0., 0., 'b.')
             if self.nc == 3:
                 ax = self.plot3D()
                 if pt is not None:
-                    ax.plot([0., pt[0]], [0., pt[1]], [0., pt[2]], 'ro:')
+                    ax.plot([0., pt[0]], [0., pt[1]], [0., pt[2]], 'r:')
+                    ax.plot(pt[0], pt[1], pt[2], 'ro')
+                    ax.plot([0.], [0.], [0.], 'b.')
         return pt
 
     # --------------------------------------------------------------------------
@@ -753,7 +759,15 @@ class Zonotope():
         nbPts = len(inter)
         logger.debug("Found %d intersection point(s)", nbPts)
 
-        orderedInt = orderPointsInPlane(np.array(inter), nf[:-1])
+        # Reorder intersection points as a
+        # sequence of consecutive neighbours
+        # for the 2D plot with lines
+        interArr = np.array(inter)
+        orderedIdx = orderPointsInPlane(interArr, nf[:-1])
+                # list of reordered indices, not points
+
+        orderedInter = [inter[i] for i in orderedIdx]
+                # list of reordered points
 
         # Plots
         if withPlot:
@@ -761,16 +775,16 @@ class Zonotope():
 
             # plot intersection points
             for k, p in enumerate(inter):
-                ax.plot(*p, 'r.')
-                ax.text(*p, "I%0d"%k, c='r')
+                ax.plot(*p, 'ro')
+#                ax.text(*p, "I%0d"%k, c='r')
 
             lines = []
-            loop = orderedInt + [orderedInt[0],]
+            loop = orderedIdx + [orderedIdx[0],]
             for i1, i2 in zip(loop[0:-1], loop[1:]):
                 lines.append([inter[i1], inter[i2]])
             ax.add_collection3d(Line3DCollection(lines,color='r', ls='--'))
 
-        return inter
+        return orderedInter
 
     # --------------------------------------------------------------------------
     def __str__(self):
