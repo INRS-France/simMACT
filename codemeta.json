@@ -1,0 +1,46 @@
+{
+    "@context": "https://w3id.org/codemeta/3.0",
+    "type": "SoftwareSourceCode",
+    "applicationCategory": "Biomechanics",
+    "author": [
+        {
+            "id": "https://orcid.org/0000-0002-7479-7898",
+            "type": "Person",
+            "affiliation": {
+                "type": "Organization",
+                "name": " CPI Laboratory, Working Equipment Engineering Department, INRS , Vandoeuvre-lès-Nancy 54500, France Institut National de Recherche et de Sécurité"
+            },
+            "email": "jonathan.savin@inrs.fr",
+            "familyName": "SAVIN",
+            "givenName": "Jonathan"
+        }
+    ],
+    "codeRepository": "https://github.com/INRS-France/simMACT",
+    "contributor": {
+        "id": "_:contributor_1",
+        "type": "Person",
+        "affiliation": {
+            "type": "Organization",
+            "name": " RoBioSS Team, PPrime Institute, CNRS-University of Poitiers-ENSMA , UPR 3346, 86073 Poitiers cedex 9, France Institut Pprime"
+        },
+        "email": "nasser.rezzoug@univ-poitiers.fr",
+        "familyName": "REZZOUG",
+        "givenName": "Nasser"
+    },
+    "datePublished": "2024-05-14",
+    "description": "simMACT (simulation of Maximal ACtuation Torques) is a software library resulting from research carried out by INRS and Inria-AUCTUS. This work concerns the estimation of human physical performance for the design of work equipment. The aim of simMACT is to improve some simulation features of a digital mannequin software (Digital Human Model, DHM), namely the computation of joint actuation torques. It relies on an advanced biomechanical model.",
+    "keywords": [
+        "Ergonomics",
+        "Workstation design",
+        "Human performance",
+        "Zonotope",
+        "Musculoskeletal simulation"
+    ],
+    "license": "https://spdx.org/licenses/BSD-3-Clause",
+    "name": "mMACT",
+    "programmingLanguage": "Python 3",
+    "softwareRequirements": "OpenSim 4+",
+    "developmentStatus": "wip",
+    "issueTracker": "https://github.com/INRS-France/simMACT/issues",
+    "referencePublication": "https://doi.org/10.1115/1.4064661"
+}
