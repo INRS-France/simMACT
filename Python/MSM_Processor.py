@@ -51,6 +51,63 @@ DEG = np.degrees
 
 GUI_COL_SZ = 10  # number of item per column in GUI windows
 
+# =============================================================================
+# Module Functions
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+def getAdjointMatrix(T_ab: osim.Transform) -> np.array:
+    """Compute the adjoint matrix of a homogeneous transformation.
+
+    Compute the adjoint matrix of a homogeneous transformation. See def 3.20
+    in the book "Modern Robotics" by Kevin M. Lynch and Frank C. Park.
+
+    Args:
+        T: osim.Transform, homogeneous transformation from frame a to frame b
+            i.e the body frame {b} expressed in reference frame {a}
+
+    Return:
+        np.array(6,6), the adjoint matrix
+    """
+    adj = np.zeros((6, 6))
+    R33 = T_ab.R()
+    R = np.array( ( [R33.get(0, 0), R33.get(0, 1), R33.get(0, 2)],
+                    [R33.get(1, 0), R33.get(1, 1), R33.get(1, 2)],
+                    [R33.get(2, 0), R33.get(2, 1), R33.get(2, 2)] ) )
+    p = T_ab.p().to_numpy()
+    adj[0:3, 0:3] = R
+    adj[3:6, 3:6] = R
+    skwsym_p = np.array( [ [ 0,   -p[2], p[1]],
+                           [ p[2],   0,  -p[0]],
+                           [-p[1], p[0],   0] ] )
+    adj[3:6, 0:3] = np.dot(p, R)
+    return adj
+
+# -----------------------------------------------------------------------------
+def inverseTransform(T_ab: osim.Transform) -> osim.Transform:
+    """
+    Compute the inverse of a homogeneous transformation.
+
+
+    Compute the inverse of a homogeneous transformation. Since simTK API is not
+    fully available in Python, process intermediate type conversions...
+
+    Args:
+        T: osim.Transform, homogeneous transformation from frame a to frame b
+            i.e the body frame {b} expressed in reference frame {a}
+
+    Return:
+        osim.Transform, the homogeneous matrix from frame b to frame a
+    """
+    R33 = T_ab.R()
+    R_ = np.array( ( [R33.get(0, 0), R33.get(0, 1), R33.get(0, 2)],
+                     [R33.get(1, 0), R33.get(1, 1), R33.get(1, 2)],
+                     [R33.get(2, 0), R33.get(2, 1), R33.get(2, 2)] ) ).transpose()
+    p_ = -np.dot(R_, T_ab.p().to_numpy())
+
+    return osim.Transform(osim.Rotation(osim.Mat33(*R_.flatten().tolist())),
+                          osim.Vec3(p_))
+
 
 # =============================================================================
 # CLASS MSM_Processor
@@ -88,9 +145,13 @@ class MSM_Processor():
 
         # load model and initialize the class
         lgg.debug("Processing %s" % osimFile)
-        self.model = osim.Model(osimFile)
-        self.model.setUseVisualizer(withVisu)
-        self.state = self.model.initSystem()
+        try:
+            self.model = osim.Model(osimFile)
+            self.model.setUseVisualizer(withVisu)
+            self.state = self.model.initSystem()
+        except Exception as exc:
+            lgg.debug("Error while processing model '%s'\n%s", osimFile, exc)
+
         if withVisu:
             self.visu = self.model.getVisualizer()
             simtkVisu = self.visu.getSimbodyVisualizer()
@@ -434,21 +495,34 @@ class MSM_Processor():
         # Equilibrate the muscle and tendon forces.
         self.model.equilibrateMuscles(self.state)
 
-    # --------------------------------------------------------------------------
-    def getBodyList(self):
-        """Return the list of bodies in the model."""
-        return self.model.getBodySet()
+        # Compute all stages of simulation, including time, positions
+        # and velocities of all bodies in the model, needed to use
+        # simTK API's functions such as getTransformInGround()
+        self.model.realizeDynamics(self.state)
 
     # --------------------------------------------------------------------------
-    def getBodyNameList(self):
-        """Return the list of the bodies'name in the model.
+    def getBodyIterator(self):
+        """Return an iterator on the list of Bodies in the model."""
+        return self.model.getBodyList()
+
+    # --------------------------------------------------------------------------
+    def getBodyList(self)->list:
+        """Return the list of the model's Bodies.
 
         Return:
-            list, body names"""
-        return [b.getName() for b in self.model.getBodySet()]
+            list(osim.Body)"""
+        return [b for b in self.model.getBodyList()]
 
     # --------------------------------------------------------------------------
-    def getBodyByName(self, bdname):
+    def getBodyNameList(self)->list:
+        """Return the list of the names of the model's Bodies.
+
+        Return:
+            list(str)"""
+        return [b.getName() for b in self.model.getBodyList()]
+
+    # --------------------------------------------------------------------------
+    def getBodyByName(self, bdname:str)->osim.Body:
         """Return the body object from its name.
 
         Args:
@@ -457,7 +531,12 @@ class MSM_Processor():
         Return:
             osim.Body object
         """
-        return self.model.getBodySet().get(bdname)
+        bd = None
+        try:
+            bd = self.model.getBodySet().get(bdname) 
+        except Exception as exc:
+            lgg.error("Body '%s' not found,\n%s", bdname, exc)
+        return bd
 
     # --------------------------------------------------------------------------
     def getBodyIdByName(self, bdname):
@@ -469,8 +548,12 @@ class MSM_Processor():
         Return:
             int: the id of the Body object
         """
-        return self.model.getBodySet().getIndex(bdname)
-
+        bid = None
+        try:
+            bid = self.model.getBodySet().getIndex(bdname)
+        except Exception as exc:
+            lgg.error("Body '%s' not found,\n%s", bdname, exc)
+        return bid
 
     # --------------------------------------------------------------------------
     def getBodyRotation(self, name):
@@ -492,114 +575,133 @@ class MSM_Processor():
                 npR[i, j] = R.get(i, j)
         return npR
 
-    # # --------------------------------------------------------------------------
-    # def getGravityForces(self):
-        # """Return the gravity force/torque applied on each body.
-
-        # This function relies on the SimTK::Force::Gravity::getBodyForces()
-        # WHICH BY DEFAULT IS NOT EXPOSED by SWIG (2023-03-02 : pending pulling
-        # request #3416) so it may require a re-compilation of OpenSim's Python
-        # wrapping or th access to a git artifact.
-
-        # Return:
-            # simTk.Vector_<simTk.SpatialVec>: vector of gravity forces
-                # on all bodies, indexed by simTk.MobilizedBodyIndex.
-        # """
-        # return self.grvHlp.getGravityForces(self.state)
-
-    # # --------------------------------------------------------------------------
-    # def getGravityForcesOnBody(self, bdname):
-        # """Return the gravity force/torque applied on the specified body.
-
-        # The returned value is a pair of 3D-vectors, first the gravity moments
-        # about the **body origin** (not its CoM), then the resulting gravity
-        # forces.
-
-        # Return:
-            # simTk.SpatialVec>: vector of gravity forces applied on the
-                # desired body, None if body not found.
-        # """
-        # spvec = None
-        # try:
-            # idx = self.getBodyIdByName(bdname)
-            # lgg.debug("Body %s is at index %d", bdname, idx)
-            # spvec = self.grvHlp.getGravityForces(self.state).get(idx)
-        # except Exception as exc:
-            # lgg.warning("Body %s not found, %s", bdname, exc)
-        # return spvec
-
     # --------------------------------------------------------------------------
-    def getJacobian(self, pos, bname):
+    def getJacobian(self, bname, pos=np.zeros(3) ):
         """Compute the jacobian matrix at position 'pos' of body 'bname'.
 
         Args:
+            bname: string, name of the body segment
             pos: np.array(3), cartesian position (in the current body frame)
                 where the jacobian is to be computed
-            bname: string, name of the body segment
 
         Return:
             jac: np.array(6, nddl), the jacobian matrix. First 3 raws
-                correspond to translation (force part of the wrench), last 3
-                raws correspond to rotation (torque part of the wrench)
-
-        TODO : test if the following instructions lead to the same result
-        jm = osim.Matrix()
-        ms = osim.Model.getMatterSubsystem()
-        ms.calcSystemJacobian(state, jm)
-        jm =
+                correspond to rotation (angular velocities), last 3
+                raws correspond to translation (linear velocities).
         """
-        bs = self.getBodyList()
-        assert bname in [b.getName() for b in bs], "Unknown body %s !" % bname
+        s = self.state
+        bId = self.getBodyByName(bname).getMobilizedBodyIndex()
 
-        nddl = self.model.getNumCoordinates()
-        cs = self.model.getCoordinateSet()
-        bd = bs.get(bname)
+        # compute the jacobian matrix using simTK API
+        jm = osim.Matrix()
+        ms = self.model.getMatterSubsystem()
+        ms.calcFrameJacobian(s, bId, osim.Vec3(*pos), jm)
 
-        v3Velocity = osim.Vec3(*np.zeros(3))  # '*' to pass parameters as list
-        v3AngulVel = osim.Vec3(*np.zeros(3))  # idem
-        v3Endeffec = osim.Vec3(*pos)          # idem
-        # simTkEngine uses Vec3 type...
+        return jm.to_numpy()
 
-        jac = np.zeros((6, nddl))
+    # --------------------------------------------------------------------------
+    def getJointByName(self, jname:str) -> osim.Joint:
+        """Return the Joint object from its name.
 
-        # Loop on DDLs to 'activate' only one DDL at a time
-        # (build jacobian matrix columnwise)
-        for i in range(nddl):
-            qd = np.zeros(nddl)
-            qd[i] = 1.
+        Args:
+            jname: string, the name of the joint.
 
-            # update speed of each joint
-            for j in range(nddl):
-                cs.get(j).setSpeedValue(self.state, qd[j])
+        Return:
+            osim.Joint object
+        """
+        j = None
+        js = self.model.getJointSet()
+        try:
+            j = js.get(jname) 
+        except Exception as exc:
+            lgg.error("Joint '%s' not found,\n%s", jname, exc)
+        return j
 
-            # solve kinematics state
-            self.model.realizeVelocity(self.state)
+    # --------------------------------------------------------------------------
+    def calcResGravityWrenchOnJoint(self, jname: str) -> np.array:
+        """Compute the resultant wrench induced by gravity forces.
+        
+        Compute the resultant wrench induced by gravity forces on all distal
+        bodies. This wrench is expressed in the parent frame of the joint 
+        considered. This function uses the function 'getTransformInGround'
+        from simTK API. Do not forget to call 'realizeDynamics' before.
+        In this package, this is done in the function 'setModelConfiguration'.
 
-            # compute velocities
-            simTkEngine = self.model.getSimbodyEngine()
-            simTkEngine.getVelocity(self.state, bd, v3Endeffec, (v3Velocity))
-            simTkEngine.getAngularVelocity(self.state, bd, v3AngulVel)
+        Args:
+            jname: string, name of the joint for which to compute the wrench
 
-            tVel = np.array(
-                [v3Velocity.get(0), v3Velocity.get(1), v3Velocity.get(2)])
-            rVel = np.array(
-                [v3AngulVel.get(0), v3AngulVel.get(1), v3AngulVel.get(2)])
-            jac[:, i] = np.concatenate((tVel, rVel))
+        Return:
+            gravity-induced wrench (Moment, Force)
+        """
+        lgg.debug("Computing cumulated wrench induced by gravity at Joint '%s'", jname)
 
-            # https://simbody.github.io/simbody-3.6-doxygen/api/classSimTK_1_1SimbodyMatterSubsystem.html#aca444046ca1a2cae0c80b7846c29abf4
-            # j_alt = osim.Matrix()
-            # ms = self.model.getMatterSubsystem()
-            # ms.calcStationJacobian(self.state,
-            #                        bs.getIndex(bname),
-            #                        osim.Vec3(*pos),
-            #                        j_alt)
-            #
-            # ou bien ms.calcSystemJacobian(self.state, j_alt)) ??
-            #
-            # lgg.debug("simTK-calculated Jacobian:\n%s", j_alt.toString())
-            # lgg.debug("NRg algorithm for Jacobian:\n%s", jac)
+        # Initialize the output "total" gravity wrench
+        TGW = np.zeros((6,1))
 
-        return jac
+        # Get gravity forces on each body of the model. This function only
+        # exists in OpenSim4.5+. This is a wrapper of simTK functions
+        # (cf. source file OpenSim/Simulation/Model/Model.h).
+        # Gravity forces are expressed in the Ground frame.
+        GBF = self.model.getGravityBodyForces(self.state)
+
+        # Get the current joint
+        J = self.getJointByName(jname)
+
+        # Get the Transformation H_0_JpF from the Ground Frame to the Joint's
+        # Parent Frame
+        H_0_JpF = J.getParentFrame().getTransformInGround(self.state)
+
+        # Get the child Body of the Joint. Convert simTK MobilizedBodyIndex
+        # to OpenSim BodyIndex because simTK API is not available in Python.
+        # The order of the two API should be the same, the rule seems to be
+        # that Mobilized Bodies are ordered such that children have higher
+        # indices than their parents, see documentation of simTK function
+        # "getNumBodies()"
+        bid = J.getChildFrame().getMobilizedBodyIndex()
+                # it's a simTK MobilizedBodyIndex, which starts with Ground = 0
+
+        # Loop on bodies from the Joint's child Body to the end of the
+        # kinematic chain. 'k' is an index in the OpenSim Body list, which
+        # does not include Ground, so use a -1 index offset
+        for k in range(bid-1, self.model.getNumBodies()):
+            Bk = self.getBodyList()[k]           # 'Bk' is an instance of Body
+
+            # Get the wrench applied on Bk in ground frame.
+            # Use the MobilizedBodyIndex to extract it from GBF
+            spVec_GW_0 = GBF.get(k+1)
+                # osim.VectorOfSpatialVec, no easy conversion to numpy.array :-(
+            GW_0 = np.hstack([spVec_GW_0.get(0).to_numpy(),
+                              spVec_GW_0.get(1).to_numpy()]).reshape(6,1)
+                # numpy array, firstly moments, secondly forces
+            lgg.debug("Gravity wrench applied to Body '%s' (in ground frame) :\n%s",
+                      Bk.getName(), GW_0)
+
+            # Compute the Adjoint matrix of the transformation from the Ground
+            adj = getAdjointMatrix(H_0_JpF)
+
+            # Compute the wrench in the Joint frame
+            GW_JpF = np.dot(adj.T, GW_0)
+
+            TGW += GW_JpF
+
+        lgg.debug("Done !")
+
+        return TGW
+
+    # --------------------------------------------------------------------------
+    def calcCoriolisEffects(self):
+        """
+        Return the Coriolis effects on all joints.
+
+        TODO !!!
+
+        Try using the simTK subsystemmatter API, e.g
+        - getGyroscopeForce
+        - getMobilizerCoriolisAcceleration
+        - getTotalCoriolisAcceleration
+        - getTotalCentrifugalForces
+        """
+        pass
 
     # --------------------------------------------------------------------------
     def plotMuscleCharacteristics(self, mName, cName):
@@ -820,7 +922,9 @@ def main():
 
     # initialize
     # ------------
-    myPrc = MSM_Processor(join(DEF_MDL_DIR, OSIM_MDL_FILE),
+    myPrc = MSM_Processor(join(DEF_MDL_DIR,
+                               OSIM_MDL_FILE),
+#                               MOBL_MDL_IGN_FILE),
                           withVisu=True)
 
     # set the model to a test configuration
@@ -828,7 +932,7 @@ def main():
     v_q = np.zeros(myPrc.getNbCoordinates())
     v_qdot = np.zeros(myPrc.getNbCoordinates())
     myPrc.setModelConfiguration(v_q, v_qdot)
-    myPrc.show()
+#    myPrc.show()
 
 
     # Plot Muscle characteristics (force/length, force-velocity)
@@ -838,6 +942,23 @@ def main():
     cName = "r_elbow_flex"          # Arm26
     myPrc.plotMuscleCharacteristics(mName, cName)
     plt.show()
+
+    # Test the gravity wrenches on joints
+    # ------------------------------------
+
+#====== arm26 Model configuration ======
+    v_q[0] = 0.    # shoulder elv
+    v_q[1] = 90.     # elbow flx
+    jnames = ["r_elbow", "r_shoulder"]
+
+#====== Simulation ======
+    myPrc.setModelConfiguration(v_q, v_qdot)
+    myPrc.show()
+
+    for jname in jnames:
+        totalGravW = myPrc.calcResGravityWrenchOnJoint(jname)
+        lgg.debug("Resulting gravity wrench on Joint '%s' in its Parent frame:\n%s" % (jname,totalGravW))
+
     lgg.info("Test finished...")
 
 

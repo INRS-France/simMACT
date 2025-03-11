@@ -54,6 +54,9 @@ Les actions suivantes sont envisagées à court, moyen ou long terme:
 - prise en compte de critères de stabilité articulaire (par exemple, que l’épaule ne se "déboite pas");
 - etc.
 
+## Modèles
+simMACT a été testé avec le modèle `MOBL` v4.1 disponible sur le site de simTK. Les modèle à télécharger est le fichier `MoBL-ARMSDynamicUpperLimb-latest.zip`. **Cette archive ne contient pas** les *meshes* nécessaires pour la visualisation. Il faut les télécharger dans le fichier `MobL_ARMS_OpenSim3_bimanual_model.zip`.
+
 
 # simMACT
 *A software library to compute human joint actuation torques for ergonomics purpose*.
@@ -106,3 +109,6 @@ The following actions are planned for the short, medium and long term:
 - development of an “on-line” calculator (website) to save the non-expert user having to install **OpenSim**, **SimBody**, Python, etc;
 - inclusion of joint stability criteria (e.g. that the shoulder does not “dislocate”);
 - etc.
+
+## Models
+simMACT has been tested with the `MOBL` v4.1 model available on the simTK website. The model to download is the file `MoBL-ARMSDynamicUpperLimb-latest.zip`. **This archive does not contain** the *meshes* required for visualization. These must be downloaded in the file `MobL_ARMS_OpenSim3_bimanual_model.zip`.
