@@ -5,4 +5,7 @@
 *.pyc
 
 # ignore OpenSim geometry files
-Models/MOBL/4.1/Geometry/*
+*.vtp
+
+# ignore files in relation to gravity implementation
+Resources/TestGravity/*
